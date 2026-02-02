@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piper TTS - Voice Synthesis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        .content {
+            padding: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .voice-info {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+            color: #667eea;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .audio-player {
+            display: none;
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .audio-player.active {
+            display: block;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stat-card h3 {
+            font-size: 2rem;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+
+            .content {
+                padding: 1.5rem;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎙️ Piper TTS Voice Synthesis</h1>
+            <p>Convert text to speech with 200+ voices in 40+ languages</p>
+        </div>
+
+        <div class="content">
+            <form id="ttsForm">
+                <div class="form-group">
+                    <label for="voiceSelect">Select Voice</label>
+                    <select id="voiceSelect" name="voice" required>
+                        {% for category, voices in voices.items() %}
+                        <optgroup label="{{ category }}">
+                            {% for voice_id, voice_name in voices.items() %}
+                            <option value="{{ voice_id }}">{{ voice_name }}</option>
+                            {% endfor %}
+                        </optgroup>
+                        {% endfor %}
+                    </select>
+                    <div class="voice-info" id="voiceInfo">
+                        Selected: Ryan (Male, Medium) - High quality American English voice
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="textInput">Text to Synthesize</label>
+                    <textarea 
+                        id="textInput" 
+                        name="text" 
+                        required
+                        placeholder="Enter the text you want to convert to speech..."
+                    >Hello! This is a demonstration of Piper text-to-speech synthesis. You can choose from over 200 different voices in more than 40 languages.</textarea>
+                </div>
+
+                <button type="submit" class="btn" id="synthesizeBtn">
+                    🎵 Generate Speech
+                </button>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Generating speech... This may take a few moments.</p>
+            </div>
+
+            <div class="audio-player" id="audioPlayer">
+                <h3>🔊 Generated Audio</h3>
+                <audio id="audioElement" controls></audio>
+                <p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">
+                    Right-click the player and select "Save audio as..." to download
+                </p>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <h3>200+</h3>
+                    <p>Voice Models</p>
+                </div>
+                <div class="stat-card">
+                    <h3>40+</h3>
+                    <p>Languages</p>
+                </div>
+                <div class="stat-card">
+                    <h3>100%</h3>
+                    <p>Free & Open Source</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('ttsForm');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const textInput = document.getElementById('textInput');
+        const loading = document.getElementById('loading');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const audioElement = document.getElementById('audioElement');
+        const synthesizeBtn = document.getElementById('synthesizeBtn');
+        const voiceInfo = document.getElementById('voiceInfo');
+
+        // Voice descriptions
+        const voiceDescriptions = {
+            'en_US-ryan-medium': 'High quality American English male voice',
+            'en_US-amy-medium': 'Natural American English female voice',
+            'en_US-lessac-high': 'Premium quality female voice with excellent clarity',
+            'en_GB-alan-medium': 'British English male voice',
+            'en_GB-cori-high': 'Premium British English female voice',
+            'es_ES-davefx-medium': 'Spanish (Spain) male voice',
+            'fr_FR-tom-medium': 'French male voice',
+            'de_DE-thorsten-medium': 'German male voice with clear pronunciation',
+            'de_DE-thorsten_emotional-medium': 'Expressive German voice with emotional range',
+            'ru_RU-dmitri-medium': 'Russian male voice',
+        };
+
+        // Update voice info when selection changes
+        voiceSelect.addEventListener('change', function() {
+            const selectedVoice = this.value;
+            const selectedText = this.options[this.selectedIndex].text;
+            const description = voiceDescriptions[selectedVoice] || 'Natural sounding voice';
+            voiceInfo.textContent = `Selected: ${selectedText} - ${description}`;
+        });
+
+        // Handle form submission
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = {
+                text: textInput.value,
+                voice: voiceSelect.value
+            };
+
+            // Show loading, hide audio player
+            loading.classList.add('active');
+            audioPlayer.classList.remove('active');
+            synthesizeBtn.disabled = true;
+
+            try {
+                const response = await fetch('/synthesize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Synthesis failed');
+                }
+
+                // Get audio blob
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+
+                // Set audio source and show player
+                audioElement.src = audioUrl;
+                audioPlayer.classList.add('active');
+                
+                // Auto-play
+                audioElement.play();
+
+            } catch (error) {
+                alert('Error generating speech: ' + error.message);
+                console.error('Error:', error);
+            } finally {
+                loading.classList.remove('active');
+                synthesizeBtn.disabled = false;
+            }
+        });
+
+        // Initialize voice info
+        voiceSelect.dispatchEvent(new Event('change'));
+    </script>
+</body>
+</html>
