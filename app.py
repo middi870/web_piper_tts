@@ -98,7 +98,7 @@ def download_voice_model(voice_id):
     Download voice model if not present
     Returns path to model file
     """
-    model_dir = Path.home() / ".local/share/piper/voices"
+    model_dir = Path.home() / ".piper/"
     model_dir.mkdir(parents=True, exist_ok=True)
     
     model_file = model_dir / f"{voice_id}.onnx"
